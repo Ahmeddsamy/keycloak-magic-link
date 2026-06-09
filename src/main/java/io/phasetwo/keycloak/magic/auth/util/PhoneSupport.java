@@ -59,8 +59,9 @@ public final class PhoneSupport {
 
   /**
    * Finds the user by phone, or creates one (username = phone) when {@code forceCreate} is true —
-   * assigning {@code roleName} and marking the phone verified. Returns {@code null} if not found
-   * and not creating.
+   * assigning {@code roleName}. The phone is NOT marked verified here; the caller calls {@link
+   * #markVerified} only after the OTP code actually passes. Returns {@code null} if not found and
+   * not creating.
    */
   public static UserModel findOrCreate(
       KeycloakSession session,
@@ -79,7 +80,6 @@ public final class PhoneSupport {
     user = session.users().addUser(realm, phone);
     user.setEnabled(true);
     user.setSingleAttribute(PHONE_NUMBER_ATTRIBUTE, phone);
-    markVerified(user);
 
     if (roleName != null && !roleName.isBlank()) {
       RoleModel role = realm.getRole(roleName);

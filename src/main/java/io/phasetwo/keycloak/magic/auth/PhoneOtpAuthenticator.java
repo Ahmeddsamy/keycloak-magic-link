@@ -7,7 +7,6 @@ import static io.phasetwo.keycloak.magic.auth.util.Authenticators.get;
 import static io.phasetwo.keycloak.magic.auth.util.Authenticators.is;
 
 import io.phasetwo.keycloak.magic.auth.util.PhoneSupport;
-import io.phasetwo.keycloak.magic.otp.OtpService;
 import io.phasetwo.keycloak.magic.otp.OtpServiceFactory;
 import io.phasetwo.keycloak.magic.otp.PhoneMasking;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -110,15 +109,20 @@ public class PhoneOtpAuthenticator extends UsernamePasswordForm {
   }
 
   private void startAndChallenge(AuthenticationFlowContext context, String phone) {
-    try {
-      OtpService otp = OtpServiceFactory.create();
-      otp.start(phone, channel(context));
-      context.getAuthenticationSession().setAuthNote(AUTH_NOTE_SENT, "1");
-    } catch (Exception e) {
-      log.warnf(
-          "ext-phone-otp: failed to send OTP to %s: %s", PhoneMasking.mask(phone), e.getMessage());
-      context.forceChallenge(codeForm(context, phone, MSG_OTP_SEND_FAILED));
-      return;
+    // Skip the (costly, managed-provider) send if a code was already sent for
+    // this attempt — e.g. a page refresh that re-enters authenticate(). Resend
+    // explicitly clears AUTH_NOTE_SENT first, so it still re-sends.
+    if (context.getAuthenticationSession().getAuthNote(AUTH_NOTE_SENT) == null) {
+      try {
+        OtpServiceFactory.create().start(phone, channel(context));
+        context.getAuthenticationSession().setAuthNote(AUTH_NOTE_SENT, "1");
+      } catch (Exception e) {
+        log.warnf(
+            "ext-phone-otp: failed to send OTP to %s: %s",
+            PhoneMasking.mask(phone), e.getMessage());
+        context.forceChallenge(codeForm(context, phone, MSG_OTP_SEND_FAILED));
+        return;
+      }
     }
     context.challenge(codeForm(context, phone, null));
   }
