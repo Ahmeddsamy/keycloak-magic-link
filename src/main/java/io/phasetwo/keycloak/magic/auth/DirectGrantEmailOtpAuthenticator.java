@@ -234,9 +234,16 @@ public class DirectGrantEmailOtpAuthenticator implements Authenticator {
                 expected.getBytes(StandardCharsets.UTF_8), otp.getBytes(StandardCharsets.UTF_8));
 
     if (!valid) {
+      // Re-put with the remaining lifetime instead of replace(): replace()
+      // does not guarantee the original per-entry TTL is preserved across
+      // store implementations, which could leave a code valid indefinitely.
+      int createdAt = Integer.parseInt(notes.getOrDefault(NOTE_CREATED_AT, "0"));
+      long remaining =
+          Math.max(1, otpTtlSeconds(context) - (Time.currentTime() - createdAt));
       Map<String, String> updated = new HashMap<>(notes);
       updated.put(NOTE_ATTEMPTS, Integer.toString(attempts + 1));
-      store.replace(key, updated);
+      store.remove(key);
+      store.put(key, remaining, updated);
 
       context.getEvent().error(Errors.INVALID_USER_CREDENTIALS);
       failure(
