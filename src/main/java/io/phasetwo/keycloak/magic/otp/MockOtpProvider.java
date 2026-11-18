@@ -1,32 +1,39 @@
 package io.phasetwo.keycloak.magic.otp;
 
+import java.util.UUID;
 import lombok.extern.jbosslog.JBossLog;
 
 /**
- * Dev/CI OTP provider. Sends nothing; {@link #check} accepts a single fixed code (from {@code
- * OTP_MOCK_CODE}, default {@code 000000}). Used until Cequens credentials + IP whitelisting are
- * provisioned (CR-03).
+ * Dev-only provider. Sends nothing and is stateless, like the backend mock: {@code OTP_MOCK_CODE}
+ * (default {@code 0000}) is valid, {@code 9999} is expired, anything else is invalid; a check code
+ * it did not issue is expired.
  */
 @JBossLog
-public class MockOtpProvider implements OtpService {
+public final class MockOtpProvider implements OtpService {
 
-  private final String fixedCode;
+  static final String CHECK_CODE_PREFIX = "mock-";
+  static final String EXPIRED_CODE = "9999";
 
-  public MockOtpProvider(String fixedCode) {
-    this.fixedCode = fixedCode;
+  private final String validCode;
+
+  public MockOtpProvider(String validCode) {
+    this.validCode = validCode;
   }
 
   @Override
-  public void start(String phoneNumber, String channel) {
+  public OtpSendResult send(OtpSendRequest request) {
     log.infof(
-        "[MockOtp] pretending to send a code over %s to %s (accept code: <OTP_MOCK_CODE>)",
-        channel, PhoneMasking.mask(phoneNumber));
+        "[MockOtp] not sending a code over %s to %s",
+        request.channel().configValue(), PhoneMasking.mask(request.recipient()));
+    return new OtpSendResult(CHECK_CODE_PREFIX + UUID.randomUUID(), request.channel(), null);
   }
 
   @Override
-  public boolean check(String phoneNumber, String code) {
-    boolean ok = fixedCode.equals(code);
-    log.debugf("[MockOtp] check for %s -> %s", PhoneMasking.mask(phoneNumber), ok);
-    return ok;
+  public OtpCheckOutcome check(String checkCode, String code) {
+    if (checkCode == null || !checkCode.startsWith(CHECK_CODE_PREFIX)) {
+      return OtpCheckOutcome.EXPIRED;
+    }
+    if (EXPIRED_CODE.equals(code)) return OtpCheckOutcome.EXPIRED;
+    return validCode.equals(code) ? OtpCheckOutcome.VALID : OtpCheckOutcome.INVALID;
   }
 }

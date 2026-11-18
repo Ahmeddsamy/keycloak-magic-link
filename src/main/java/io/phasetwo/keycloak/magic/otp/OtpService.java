@@ -1,26 +1,22 @@
 package io.phasetwo.keycloak.magic.otp;
 
 /**
- * Vendor-neutral one-time-password verification.
+ * Managed one-time-password verification: the provider generates, delivers, expires and checks the
+ * code; Keycloak only keeps the provider's check code in the (server-side) auth session.
  *
- * <p>Mirrors the parcelo-backend {@code OtpVerificationService} so the same managed-OTP contract is
- * shared by both runtimes that send agent/address OTPs (this Keycloak SPI for agent login, NestJS
- * for address verify): the provider owns code generation, delivery, expiry and checking — we never
- * store codes.
+ * <p>Same contract as the parcelo-backend {@code OtpVerificationProvider}; both adapters are tested
+ * against the shared {@code cequens-mfa-responses.json} fixtures.
  */
 public interface OtpService {
 
-  /**
-   * Starts a verification — sends a code to {@code phoneNumber} (E.164) over {@code channel} (e.g.
-   * {@code whatsapp}, {@code sms}). Provider-managed fallback (WhatsApp&rarr;SMS) is handled by the
-   * provider, not here.
-   */
-  void start(String phoneNumber, String channel);
+  /** Sends a code over exactly {@code request.channel()}. */
+  OtpSendResult send(OtpSendRequest request) throws OtpProviderException;
 
   /**
-   * @return {@code true} if {@code code} is the valid, unexpired code for {@code phoneNumber};
-   *     {@code false} for an invalid/expired code. Throws only on transport/provider failure
-   *     (caller treats as "try again").
+   * Checks {@code code} against the code behind {@code checkCode}. Fails closed: anything not
+   * clearly verified is {@link OtpCheckOutcome#INVALID}.
+   *
+   * @throws OtpProviderException only when the provider could not answer (outage, credentials)
    */
-  boolean check(String phoneNumber, String code);
+  OtpCheckOutcome check(String checkCode, String code) throws OtpProviderException;
 }

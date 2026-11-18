@@ -1,0 +1,194 @@
+{
+  "description": "Recorded CEQUENS MFA API responses (from developer.cequens.com reference examples, 2026-11-18) with the outcome every Parcelo adapter (backend TS, Keycloak Java) must produce. expected.kind: 'token' | 'sent' | 'outcome' | 'failure'. Outcomes: valid | invalid | expired | exhausted | already_used. Failures: INVALID_RECIPIENT | CHANNEL_UNAVAILABLE | NO_CREDIT | PROVIDER_AUTH | MISCONFIGURED | UNAVAILABLE | UNEXPECTED_RESPONSE.",
+  "cases": [
+    {
+      "name": "signin_ok",
+      "operation": "signIn",
+      "httpStatus": 200,
+      "body": { "replyCode": 0, "replyMessage": "[Request handled successfully]", "requestId": "60049a30-87ca-11eb-98c7-655762893d27", "clientRequestId": 0, "requestTime": "2021-03-18T09:14:42.899", "data": { "access_token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwYXJjZWxvIn0.sig" } },
+      "expected": { "kind": "token", "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwYXJjZWxvIn0.sig" }
+    },
+    {
+      "name": "signin_invalid_credentials",
+      "operation": "signIn",
+      "httpStatus": 401,
+      "body": { "replyCode": -1, "replyMessage": "[Request failed] UnAuthorized-Invalid User", "requestId": "6dc018b0-3989-11ea-a521-47d3d88ba8cb", "clientRequestId": 0, "requestTime": "2020-01-18T02:28:20.283", "error": { "status": 401, "description": "Not valid user credentials." } },
+      "expected": { "kind": "failure", "failure": "PROVIDER_AUTH" }
+    },
+    {
+      "name": "signin_missing_token_field",
+      "operation": "signIn",
+      "httpStatus": 200,
+      "body": { "replyCode": 0, "replyMessage": "[Request handled successfully]", "requestId": "x", "data": {} },
+      "expected": { "kind": "failure", "failure": "UNEXPECTED_RESPONSE" }
+    },
+    {
+      "name": "send_ok",
+      "operation": "send",
+      "httpStatus": 201,
+      "body": { "status": 201, "replyMessage": "[Request handled successfully] Passcode Sent", "requestId": "32a6d7340-405e-11ea-9ffd-47489e6dbc08", "requestTime": "2020-01-26T19:06:30.912", "data": { "checkCode": "NUAGYJBQMAYDSXAD" } },
+      "expected": { "kind": "sent", "checkCode": "NUAGYJBQMAYDSXAD", "requestId": "32a6d7340-405e-11ea-9ffd-47489e6dbc08" }
+    },
+    {
+      "name": "send_ok_missing_check_code",
+      "operation": "send",
+      "httpStatus": 201,
+      "body": { "status": 201, "replyMessage": "[Request handled successfully] Passcode Sent", "requestId": "r1", "data": {} },
+      "expected": { "kind": "failure", "failure": "UNEXPECTED_RESPONSE" }
+    },
+    {
+      "name": "send_invalid_recipient",
+      "operation": "send",
+      "httpStatus": 400,
+      "body": { "status": 400, "requestId": "86e4c94e-dbd8-43e2-9761-8670fb95af6b", "clientRequestId": 0, "replyCode": 0, "requestTime": "2022-02-07T14:08:55.478", "replyMessage": "[Request failed]", "data": {}, "error": "recipientIdentifier field allows only international phone number format: (eg: +1xxxxxxxxxxx)." },
+      "expected": { "kind": "failure", "failure": "INVALID_RECIPIENT" }
+    },
+    {
+      "name": "send_invalid_channel",
+      "operation": "send",
+      "httpStatus": 400,
+      "body": { "status": 400, "requestId": "62e56cb3-442b-4f04-9278-d9d5b32003ee", "replyCode": 0, "requestTime": "2022-02-07T14:10:49.684", "replyMessage": "[Request failed]", "data": {}, "error": "channel field accepts: SMS, Email, Whatsapp values." },
+      "expected": { "kind": "failure", "failure": "MISCONFIGURED" }
+    },
+    {
+      "name": "send_token_rejected",
+      "operation": "send",
+      "httpStatus": 401,
+      "body": { "status": 401, "replyMessage": "[Request failed] ", "requestId": "32a6d800-405e-11ea-9ffd-47489e6dbc08", "requestTime": "2020-01-26T19:06:30.912", "data": {}, "error": "Unauthoized" },
+      "expected": { "kind": "failure", "failure": "PROVIDER_AUTH" }
+    },
+    {
+      "name": "send_no_credit",
+      "operation": "send",
+      "httpStatus": 402,
+      "body": { "status": 402, "replyMessage": "[Request failed] ", "requestId": "32a6d800-405e-11ea-9ffd-47489e6dbc08", "requestTime": "2020-01-26T19:06:30.912", "data": {}, "error": "Verification on Channel SMS is not sent: Not enough credit." },
+      "expected": { "kind": "failure", "failure": "NO_CREDIT" }
+    },
+    {
+      "name": "send_no_channel_privilege",
+      "operation": "send",
+      "httpStatus": 404,
+      "body": { "status": 404, "requestId": "db903187-ac30-4406-bee7-74d03bc2d4d5", "requestTime": "2022-02-16T13:24:45.544", "replyMessage": "[Request failed]", "data": {}, "error": "No privilege to use verify service on channel: Whatsapp" },
+      "expected": { "kind": "failure", "failure": "CHANNEL_UNAVAILABLE" }
+    },
+    {
+      "name": "send_no_verify_privilege",
+      "operation": "send",
+      "httpStatus": 404,
+      "body": { "status": 404, "requestId": "790c1ad2-ffbd-4a1d-9715-7f36988947d2", "clientRequestId": 0, "replyCode": 0, "requestTime": "2022-02-07T14:07:01.917", "replyMessage": "[Request failed]", "data": {}, "error": "No privilege to use verify service for accountId: 15xxxx" },
+      "expected": { "kind": "failure", "failure": "MISCONFIGURED" }
+    },
+    {
+      "name": "send_verify_not_configured",
+      "operation": "send",
+      "httpStatus": 404,
+      "body": { "requestId": "21458599-d43f-4afb-9690-c4758f0f45f5", "clientRequestId": 0, "replyCode": 1001, "requestTime": "2022-10-31T08:49:54.050", "data": {}, "status": 404, "replyMessage": "[Request failed]", "error": "Verify is not configured for account: 11754" },
+      "expected": { "kind": "failure", "failure": "MISCONFIGURED" }
+    },
+    {
+      "name": "send_unexpected_403",
+      "operation": "send",
+      "httpStatus": 403,
+      "body": { "requestId": "a6e5ac76-9d7c-4221-9e26-7612d0c68f28", "clientRequestId": 0, "replyCode": 2001, "requestTime": "2022-11-01T13:15:02.335", "data": {}, "status": 403, "replyMessage": "[Request failed]", "error": "Verification with checkCode: xxxxxxxxxxx exceeds maximum trials." },
+      "expected": { "kind": "failure", "failure": "UNEXPECTED_RESPONSE" }
+    },
+    {
+      "name": "send_server_error",
+      "operation": "send",
+      "httpStatus": 500,
+      "body": { "status": 500, "replyMessage": "[Request failed] ", "requestId": "34a6e500-405e-33uy-9ffd-47489e6dbc00", "requestTime": "2020-01-26T19:08:30.912", "data": {}, "error": "Internal Server Error" },
+      "expected": { "kind": "failure", "failure": "UNAVAILABLE" }
+    },
+    {
+      "name": "check_verified",
+      "operation": "check",
+      "httpStatus": 200,
+      "body": { "status": 200, "replyMessage": "[Request handled successfully]", "requestId": "32a6d800-405e-11ea-9ffd-47489e6dbc08", "replyCode": 0, "requestTime": "2020-01-26T19:06:30.912", "data": { "otpPasscodeStatus": 1 } },
+      "expected": { "kind": "outcome", "outcome": "valid" }
+    },
+    {
+      "name": "check_wrong_code",
+      "operation": "check",
+      "httpStatus": 200,
+      "body": { "status": 200, "requestId": "0009b55b-6a8d-4688-859b-9bfe8db2f089", "replyCode": 0, "requestTime": "2022-02-07T15:47:23.296", "replyMessage": "[Request handled successfully]", "data": { "otpPasscodeStatus": 2 } },
+      "expected": { "kind": "outcome", "outcome": "invalid" }
+    },
+    {
+      "name": "check_expired",
+      "operation": "check",
+      "httpStatus": 200,
+      "body": { "status": 200, "requestId": "0009b55b-6a8d-4688-859b-9bfe8db2f089", "replyCode": 0, "requestTime": "2022-02-07T15:47:23.296", "replyMessage": "[Request handled successfully]", "data": { "otpPasscodeStatus": 0 } },
+      "expected": { "kind": "outcome", "outcome": "expired" }
+    },
+    {
+      "name": "check_status_missing_fails_closed",
+      "operation": "check",
+      "httpStatus": 200,
+      "body": { "status": 200, "requestId": "r2", "replyCode": 0, "replyMessage": "[Request handled successfully]", "data": {} },
+      "expected": { "kind": "outcome", "outcome": "invalid" }
+    },
+    {
+      "name": "check_status_unknown_fails_closed",
+      "operation": "check",
+      "httpStatus": 200,
+      "body": { "status": 200, "requestId": "r3", "replyCode": 0, "replyMessage": "[Request handled successfully]", "data": { "otpPasscodeStatus": 7 } },
+      "expected": { "kind": "outcome", "outcome": "invalid" }
+    },
+    {
+      "name": "check_status_string_fails_closed",
+      "operation": "check",
+      "httpStatus": 200,
+      "body": { "status": 200, "requestId": "r4", "replyCode": 0, "replyMessage": "[Request handled successfully]", "data": { "otpPasscodeStatus": "1" } },
+      "expected": { "kind": "outcome", "outcome": "invalid" }
+    },
+    {
+      "name": "check_body_status_not_200_fails_closed",
+      "operation": "check",
+      "httpStatus": 200,
+      "body": { "status": 500, "requestId": "r5", "replyMessage": "[Request failed]", "data": { "otpPasscodeStatus": 1 } },
+      "expected": { "kind": "failure", "failure": "UNAVAILABLE" }
+    },
+    {
+      "name": "check_max_trials",
+      "operation": "check",
+      "httpStatus": 403,
+      "body": { "status": 403, "requestId": "2e411b01-c763-4c4f-b71f-9f233ebeaca8", "replyCode": 2001, "requestTime": "2022-02-07T15:50:15.253", "data": {}, "replyMessage": "[Request failed]", "error": "Verification with checkCode: EUBDE42YKQWBWTIN exceeds maximum trials." },
+      "expected": { "kind": "outcome", "outcome": "exhausted" }
+    },
+    {
+      "name": "check_already_verified",
+      "operation": "check",
+      "httpStatus": 403,
+      "body": { "status": 403, "requestId": "e5bb8484-9fa5-49b7-abe3-5d65bcf1f4a1", "replyCode": 0, "requestTime": "2022-02-07T15:44:13.684", "replyMessage": "[Request failed]", "data": {}, "error": "Verification with checkCode: EUBDE42YKQWBWTIN is already verified." },
+      "expected": { "kind": "outcome", "outcome": "already_used" }
+    },
+    {
+      "name": "check_unknown_check_code",
+      "operation": "check",
+      "httpStatus": 404,
+      "body": { "requestId": "02b74e8c-e753-47f0-b9e4-b86e8f775c1a", "clientRequestId": 0, "replyCode": 0, "requestTime": "2022-10-31T20:01:55.150", "data": {}, "status": 404, "replyMessage": "[Request failed]", "error": "Invalid Verification checkCode: ec9b29d8-0f0c-4e25-ac2b-674310cb71f5" },
+      "expected": { "kind": "outcome", "outcome": "expired" }
+    },
+    {
+      "name": "check_token_rejected",
+      "operation": "check",
+      "httpStatus": 401,
+      "body": { "status": 401, "replyMessage": "[Request failed] ", "requestId": "34a6e500-405e-11ea-9ffd-47489e6dbc08", "requestTime": "2020-01-26T19:08:30.912", "data": {}, "error": "Unauthoized" },
+      "expected": { "kind": "failure", "failure": "PROVIDER_AUTH" }
+    },
+    {
+      "name": "check_server_error",
+      "operation": "check",
+      "httpStatus": 500,
+      "body": { "status": 500, "replyMessage": "[Request failed] ", "requestId": "34a6e500-405e-33uy-9ffd-47489e6dbc00", "requestTime": "2020-01-26T19:08:30.912", "data": {}, "error": "Internal Server Error" },
+      "expected": { "kind": "failure", "failure": "UNAVAILABLE" }
+    },
+    {
+      "name": "check_non_json_body",
+      "operation": "check",
+      "httpStatus": 502,
+      "body": "<html>Bad Gateway</html>",
+      "expected": { "kind": "failure", "failure": "UNAVAILABLE" }
+    }
+  ]
+}
