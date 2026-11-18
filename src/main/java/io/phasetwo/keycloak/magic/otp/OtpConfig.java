@@ -25,6 +25,10 @@ public final class OtpConfig {
   public final int codeExpiryMinutes;
 
   public final String cequensBaseUrl;
+
+  /** Long-lived console token used as-is (no sign-in); {@code null} to sign in with the API key. */
+  public final String cequensAccessToken;
+
   public final String cequensUserName;
   public final String cequensApiKey;
   public final String whatsappTemplateName;
@@ -39,6 +43,7 @@ public final class OtpConfig {
     this.codeExpiryMinutes = intValue(env, "OTP_CODE_EXPIRY_MINUTES", 5);
     this.cequensBaseUrl =
         stripTrailingSlash(value(env, "CEQUENS_BASE_URL", "https://apis.cequens.com"));
+    this.cequensAccessToken = value(env, "CEQUENS_ACCESS_TOKEN", null);
     this.cequensUserName = value(env, "CEQUENS_USERNAME", null);
     this.cequensApiKey = value(env, "CEQUENS_API_KEY", null);
     this.whatsappTemplateName = value(env, "CEQUENS_WHATSAPP_TEMPLATE_NAME", null);
@@ -78,8 +83,10 @@ public final class OtpConfig {
     if (!isCequens()) {
       return problems;
     }
-    if (cequensUserName == null) problems.add("CEQUENS_USERNAME is not set");
-    if (cequensApiKey == null) problems.add("CEQUENS_API_KEY is not set");
+    if (cequensAccessToken == null) {
+      if (cequensUserName == null) problems.add("CEQUENS_USERNAME is not set");
+      if (cequensApiKey == null) problems.add("CEQUENS_API_KEY is not set");
+    }
     if (!cequensBaseUrl.startsWith(HTTPS_PREFIX)) problems.add("CEQUENS_BASE_URL must be https");
     // Optional: without it every code goes by SMS (see whatsappReady()).
     if (whatsappTemplateName != null

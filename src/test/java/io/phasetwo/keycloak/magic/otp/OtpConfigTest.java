@@ -56,6 +56,13 @@ class OtpConfigTest {
   }
 
   @Test
+  void aConsoleAccessTokenReplacesApiKeyAndUsername() {
+    OtpConfig config =
+        new OtpConfig(Map.of("OTP_PROVIDER", "cequens", "CEQUENS_ACCESS_TOKEN", "t")::get);
+    assertTrue(config.problems().isEmpty());
+  }
+
+  @Test
   void rejectsAnUnknownProvider() {
     assertFalse(new OtpConfig(Map.of("OTP_PROVIDER", "twilio")::get).problems().isEmpty());
   }

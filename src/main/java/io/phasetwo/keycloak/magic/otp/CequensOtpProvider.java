@@ -103,7 +103,11 @@ public final class CequensOtpProvider implements OtpService {
     String json = toJson(payload);
     String current = token();
     CequensTransport.Response response = exchange(method, MFA_PATH, json, current);
-    if (response.status() != CequensResponses.HTTP_UNAUTHORIZED) return response;
+    // A fixed console token can't be refreshed: a 401 is final (PROVIDER_AUTH).
+    if (response.status() != CequensResponses.HTTP_UNAUTHORIZED
+        || config.cequensAccessToken != null) {
+      return response;
+    }
 
     invalidate(current);
     return exchange(method, MFA_PATH, json, token());
@@ -111,6 +115,7 @@ public final class CequensOtpProvider implements OtpService {
 
   /** Cached token, or a fresh one; concurrent callers share a single sign-in. */
   String token() throws OtpProviderException {
+    if (config.cequensAccessToken != null) return config.cequensAccessToken;
     CachedToken cached = token;
     if (cached != null && nowMs.getAsLong() < cached.expiresAtMs()) return cached.value();
     signInLock.lock();

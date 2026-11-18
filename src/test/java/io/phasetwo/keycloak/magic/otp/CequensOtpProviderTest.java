@@ -167,6 +167,37 @@ class CequensOtpProviderTest {
   }
 
   @Test
+  void usesAConsoleAccessTokenWithoutSigningIn() throws Exception {
+    OtpConfig tokenConfig =
+        new OtpConfig(
+            Map.of("OTP_PROVIDER", "cequens", "CEQUENS_ACCESS_TOKEN", "console-token")::get);
+    FakeTransport transport = new FakeTransport().then(201, SEND_OK);
+
+    new CequensOtpProvider(tokenConfig, transport, clock::get)
+        .send(new OtpSendRequest("+966501234567", OtpChannel.SMS, "en", 4, 5));
+
+    assertEquals(0, transport.signIns());
+    assertEquals("console-token", transport.calls.get(0).bearer());
+  }
+
+  @Test
+  void aRejectedConsoleTokenIsFinal() {
+    OtpConfig tokenConfig =
+        new OtpConfig(
+            Map.of("OTP_PROVIDER", "cequens", "CEQUENS_ACCESS_TOKEN", "console-token")::get);
+    FakeTransport transport = new FakeTransport().then(401, UNAUTHORIZED);
+
+    OtpProviderException e =
+        assertThrows(
+            OtpProviderException.class,
+            () ->
+                new CequensOtpProvider(tokenConfig, transport, clock::get)
+                    .send(new OtpSendRequest("+966501234567", OtpChannel.SMS, "en", 4, 5)));
+    assertEquals(OtpProviderFailure.PROVIDER_AUTH, e.failure());
+    assertEquals(1, transport.calls.size());
+  }
+
+  @Test
   void whatsappBodyCarriesTheTemplateAndLanguage() throws Exception {
     FakeTransport transport = new FakeTransport().then(200, signIn("t")).then(201, SEND_OK);
 
