@@ -17,9 +17,15 @@ public final class PhoneOtpSender {
       EnumSet.of(OtpProviderFailure.CHANNEL_UNAVAILABLE, OtpProviderFailure.MISCONFIGURED);
 
   private final OtpService service;
+  private final boolean whatsappReady;
 
-  public PhoneOtpSender(OtpService service) {
+  /**
+   * @param whatsappReady false while no WhatsApp template is configured: WhatsApp is then replaced
+   *     by SMS up front
+   */
+  public PhoneOtpSender(OtpService service, boolean whatsappReady) {
     this.service = service;
+    this.whatsappReady = whatsappReady;
   }
 
   public OtpSendResult send(
@@ -32,6 +38,7 @@ public final class PhoneOtpSender {
       int expiryMinutes)
       throws OtpProviderException {
     OtpChannel channel = isResend ? resendChannel : primary;
+    if (channel == OtpChannel.WHATSAPP && !whatsappReady) channel = OtpChannel.SMS;
     try {
       return service.send(new OtpSendRequest(phone, channel, locale, codeLength, expiryMinutes));
     } catch (OtpProviderException e) {

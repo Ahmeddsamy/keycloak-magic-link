@@ -46,6 +46,16 @@ class OtpConfigTest {
   }
 
   @Test
+  void cequensWithoutAWhatsappTemplateIsUsableBySmsOnly() {
+    OtpConfig config =
+        new OtpConfig(
+            Map.of("OTP_PROVIDER", "cequens", "CEQUENS_USERNAME", "u", "CEQUENS_API_KEY", "k")
+                ::get);
+    assertTrue(config.problems().isEmpty());
+    assertFalse(config.whatsappReady());
+  }
+
+  @Test
   void rejectsAnUnknownProvider() {
     assertFalse(new OtpConfig(Map.of("OTP_PROVIDER", "twilio")::get).problems().isEmpty());
   }

@@ -37,7 +37,7 @@ class PhoneOtpSenderTest {
 
   private static OtpSendResult send(FakeService service, boolean isResend)
       throws OtpProviderException {
-    return new PhoneOtpSender(service)
+    return new PhoneOtpSender(service, true)
         .send(PHONE, OtpChannel.WHATSAPP, OtpChannel.SMS, isResend, "en", 4, 5);
   }
 
@@ -46,6 +46,16 @@ class PhoneOtpSenderTest {
     FakeService service = new FakeService(null);
     assertEquals(OtpChannel.WHATSAPP, send(service, false).channel());
     assertEquals(List.of(OtpChannel.WHATSAPP), service.sends);
+  }
+
+  @Test
+  void sendsBySmsWhileWhatsappHasNoTemplate() throws Exception {
+    FakeService service = new FakeService(null);
+    OtpSendResult result =
+        new PhoneOtpSender(service, false)
+            .send(PHONE, OtpChannel.WHATSAPP, OtpChannel.SMS, false, "en", 4, 5);
+    assertEquals(OtpChannel.SMS, result.channel());
+    assertEquals(List.of(OtpChannel.SMS), service.sends);
   }
 
   @Test

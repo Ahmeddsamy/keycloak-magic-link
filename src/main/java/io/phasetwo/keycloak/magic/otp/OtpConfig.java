@@ -56,6 +56,14 @@ public final class OtpConfig {
     return PROVIDER_CEQUENS.equals(provider);
   }
 
+  /**
+   * WhatsApp needs an approved authentication template. Until one is configured, codes go by SMS
+   * instead of a call that can only fail. The mock "sends" anything.
+   */
+  public boolean whatsappReady() {
+    return !isCequens() || whatsappTemplateName != null;
+  }
+
   /** SMS template for {@code locale}, or {@code null} to use the account default. */
   public String smsTemplateCode(String locale) {
     return "ar".equals(locale) ? smsTemplateCodeAr : smsTemplateCodeEn;
@@ -73,8 +81,9 @@ public final class OtpConfig {
     if (cequensUserName == null) problems.add("CEQUENS_USERNAME is not set");
     if (cequensApiKey == null) problems.add("CEQUENS_API_KEY is not set");
     if (!cequensBaseUrl.startsWith(HTTPS_PREFIX)) problems.add("CEQUENS_BASE_URL must be https");
-    if (whatsappTemplateName == null
-        || !whatsappTemplateName.startsWith(WHATSAPP_TEMPLATE_PREFIX)) {
+    // Optional: without it every code goes by SMS (see whatsappReady()).
+    if (whatsappTemplateName != null
+        && !whatsappTemplateName.startsWith(WHATSAPP_TEMPLATE_PREFIX)) {
       problems.add("CEQUENS_WHATSAPP_TEMPLATE_NAME must start with 'verify_'");
     }
     return problems;

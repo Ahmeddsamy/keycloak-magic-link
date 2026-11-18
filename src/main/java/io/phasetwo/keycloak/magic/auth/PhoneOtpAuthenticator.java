@@ -168,10 +168,11 @@ public class PhoneOtpAuthenticator extends UsernamePasswordForm {
       return;
     }
 
+    OtpConfig otpConfig = OtpConfig.fromEnv();
     OtpSendResult sent;
     try {
       sent =
-          new PhoneOtpSender(otpService())
+          new PhoneOtpSender(otpService(), otpConfig.whatsappReady())
               .send(
                   phone,
                   settings.primaryChannel(),
@@ -179,7 +180,7 @@ public class PhoneOtpAuthenticator extends UsernamePasswordForm {
                   isResend,
                   locale(context),
                   settings.codeLength(),
-                  OtpConfig.fromEnv().codeExpiryMinutes);
+                  otpConfig.codeExpiryMinutes);
     } catch (OtpProviderException e) {
       log.warnf(
           "ext-phone-otp: send to %s failed: %s requestId=%s",
